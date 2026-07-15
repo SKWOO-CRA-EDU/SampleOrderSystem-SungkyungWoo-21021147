@@ -143,6 +143,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\domain\Records.h" />
+    <ClInclude Include="src\ports\ISampleRepository.h" />
+    <ClInclude Include="src\ports\IOrderRepository.h" />
+    <ClInclude Include="src\ports\IInputPort.h" />
+    <ClInclude Include="src\ports\IOutputPort.h" />
+    <ClInclude Include="src\model\Views.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
