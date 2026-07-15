@@ -7,6 +7,14 @@ namespace infra::console {
 
 namespace {
 
+// CC-11 — 재고/주문 상태 색상 전용. 색이 꺼져도 라벨 텍스트만으로 의미가 통한다.
+constexpr const char* kColorReset = "\x1b[0m";
+constexpr const char* kColorGreen = "\x1b[32m";
+constexpr const char* kColorYellow = "\x1b[33m";
+constexpr const char* kColorRed = "\x1b[31m";
+constexpr const char* kColorCyan = "\x1b[36m";
+constexpr const char* kColorBlue = "\x1b[34m";
+
 const char* StatusLabel(domain::OrderStatus status) {
     switch (status) {
         case domain::OrderStatus::Reserved: return "RESERVED";
@@ -18,6 +26,21 @@ const char* StatusLabel(domain::OrderStatus status) {
     return "?";
 }
 
+const char* StatusColor(domain::OrderStatus status) {
+    switch (status) {
+        case domain::OrderStatus::Reserved: return kColorCyan;
+        case domain::OrderStatus::Rejected: return kColorRed;
+        case domain::OrderStatus::Producing: return kColorYellow;
+        case domain::OrderStatus::Confirmed: return kColorGreen;
+        case domain::OrderStatus::Release: return kColorBlue;
+    }
+    return kColorReset;
+}
+
+std::string ColoredStatusLabel(domain::OrderStatus status) {
+    return std::string(StatusColor(status)) + StatusLabel(status) + kColorReset;
+}
+
 const char* StockStateLabel(model::StockState state) {
     switch (state) {
         case model::StockState::Sufficient: return "여유(Sufficient)";
@@ -25,6 +48,19 @@ const char* StockStateLabel(model::StockState state) {
         case model::StockState::Depleted: return "고갈(Depleted)";
     }
     return "?";
+}
+
+const char* StockStateColor(model::StockState state) {
+    switch (state) {
+        case model::StockState::Sufficient: return kColorGreen;
+        case model::StockState::Insufficient: return kColorYellow;
+        case model::StockState::Depleted: return kColorRed;
+    }
+    return kColorReset;
+}
+
+std::string ColoredStockStateLabel(model::StockState state) {
+    return std::string(StockStateColor(state)) + StockStateLabel(state) + kColorReset;
 }
 
 const char* RejectionLabel(model::RejectionCode code) {
@@ -51,7 +87,7 @@ void PrintSample(const domain::SampleRecord& sample) {
 
 void PrintOrder(const domain::OrderRecord& order) {
     std::cout << "  #" << order.orderId << " [" << order.sampleId << "] " << order.customerName
-              << " | 주문수=" << order.orderQuantity << " | 상태=" << StatusLabel(order.status)
+              << " | 주문수=" << order.orderQuantity << " | 상태=" << ColoredStatusLabel(order.status)
               << " | 등록=" << order.createdAt << "\n";
 }
 
@@ -104,7 +140,7 @@ void ConsoleOutputPort::ShowProductionQueue(const std::vector<model::ProductionQ
 }
 
 void ConsoleOutputPort::ShowOrdersByStatus(domain::OrderStatus status, const std::vector<domain::OrderRecord>& orders) {
-    std::cout << "[" << StatusLabel(status) << "] (" << orders.size() << "건)\n";
+    std::cout << "[" << ColoredStatusLabel(status) << "] (" << orders.size() << "건)\n";
     for (const auto& order : orders) PrintOrder(order);
 }
 
@@ -113,7 +149,7 @@ void ConsoleOutputPort::ShowStockLevels(const std::vector<model::StockLevelView>
     for (const auto& level : levels) {
         std::cout << "  [" << level.sample.sampleId << "] " << level.sample.name
                   << " | 재고수량=" << level.sample.stockQuantity << " | 판단대상주문수=" << level.judgedOrderQuantity
-                  << " | 상태=" << StockStateLabel(level.state) << "\n";
+                  << " | 상태=" << ColoredStockStateLabel(level.state) << "\n";
     }
 }
 

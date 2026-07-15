@@ -19,6 +19,13 @@ int main() {
     SetConsoleOutputCP(CP_UTF8);
     SetConsoleCP(CP_UTF8);
 
+    // CC-11 — ANSI 색상 표시를 위해 가상 터미널 처리 활성화. 실패해도 프로그램은 계속 진행한다.
+    HANDLE hStdOut = GetStdHandle(STD_OUTPUT_HANDLE);
+    DWORD consoleMode = 0;
+    if (hStdOut != INVALID_HANDLE_VALUE && GetConsoleMode(hStdOut, &consoleMode)) {
+        SetConsoleMode(hStdOut, consoleMode | ENABLE_VIRTUAL_TERMINAL_PROCESSING);
+    }
+
     infra::persistence::JsonDocumentStore store("data.json");
     infra::persistence::FileSampleRepository sampleRepo(store);
     infra::persistence::FileOrderRepository orderRepo(store);

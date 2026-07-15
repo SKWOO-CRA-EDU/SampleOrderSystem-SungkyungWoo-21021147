@@ -19,7 +19,29 @@ private:
     ports::IInputPort& input_;
 
     std::string ReadField(const std::string& label);
-    bool DispatchCommand(const std::string& choice);
+
+    // CC-11 — 메인 2단 구조. 각 Run*Menu는 [0] 뒤로로 메인 복귀.
+    void PrintMainMenu();
+    void RunSampleManagementMenu();
+    void RunOrderApprovalMenu();
+    void RunMonitoringMenu();
+    void RunProductionLineMenu();
+
+    // 기존 14개 기능 동작 — 입력 순서/출력 내용은 CC-10 이전과 동일, 도달 경로만 서브메뉴로 이동.
+    void DoRegisterSample();
+    void DoListSamples();
+    void DoSearchSamples();
+    void DoDeleteSample();
+    void DoReserveOrder();
+    void DoPendingOrderList();
+    void DoApproveOrder();
+    void DoRejectOrder();
+    void DoCancelConfirmedOrder();
+    void DoReleaseOrder();
+    void DoCompleteProduction();
+    void DoProductionStatusDisplay();
+    void DoCheckOrderVolume();
+    void DoCheckStockLevel();
 };
 
 }  // namespace app
