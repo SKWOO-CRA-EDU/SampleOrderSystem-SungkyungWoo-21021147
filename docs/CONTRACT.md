@@ -1,8 +1,12 @@
 # CONTRACT — 데이터 모델 · 영속 포맷 계약서
 
-> **버전**: v3 | **최종 수정일**: 2026-07-15
+> **버전**: v4 | **최종 수정일**: 2026-07-15
 
-> **동결 선언**: v3 시점으로 저장소 계층 인터페이스는 동결되었다.
+> **동결 선언**: v3 시점으로 저장소 계층 인터페이스는 동결되었다. v4는 이 동결을 깨지 않는다 —
+> 저장소 인터페이스(§5, 11개 메서드)는 한 글자도 바뀌지 않았다. v4가 개정하는 것은 §1의 재고수량
+> 불변식과 §8의 계산 규칙뿐이며, 이는 상류(DECISIONS.md ADR-Q21~Q24)에서 새로 확정된 도메인
+> 결정을 반영한 것이지 v3 계약 설계의 오류를 바로잡는 것이 아니다. v4는 이번 한 번뿐이며 v5는
+> 없다 — 계산 규칙이 또 바뀌어야 한다고 판단되면 개정하지 말고 사용자에게 먼저 보고한다.
 > 이후 개정은 새로운 도메인 요구가 발생한 경우에 한한다. 설계 편의를 이유로 한 개정은 하지 않는다.
 
 > 근거: `docs/PRD.md`, `docs/DECISIONS.md`만 사용. 4개 PoC 저장소(ConsoleMVC, DataPersistence,
@@ -31,9 +35,9 @@
 | Name | `std::string` | [PRD FR-01] |
 | AvgProductionTime | `double` > 0, 등록 시 거부 | [PRD FR-03] |
 | Yield | §3 `yieldNumerator` 참조, 실효값 ∈ (0,1] | [PRD FR-02][ADR-Q3][ADR-Q4] |
-| StockQuantity | `int64_t` ≥ 0, 내부 로직만 변경 | [ADR-Q1][ADR-Q12] |
+| StockQuantity | `int64_t`, 등록 시점에만 ≥0 검증. 런타임 중 음수 허용(미충족 약정 수량), 내부 로직만 변경 | [ADR-Q1][ADR-Q12][ADR-Q21] |
 
-불변식: Yield∈(0,1](등록시 강제) [ADR-Q3/Q4] · AvgProductionTime>0 [ADR-Q12] · StockQuantity≥0(코드 보장) [ADR-Q1/Q12]
+불변식: Yield∈(0,1](등록시 강제) [ADR-Q3/Q4] · AvgProductionTime>0 [ADR-Q12] · StockQuantity — 등록 시점에만 ≥0 검증, 런타임 음수 허용(코드가 강제로 0 이상 유지하지 않는다) [ADR-Q1/Q12/Q21]
 
 ### 1.3 Order
 | 필드 | 타입/제약 | 근거 |
@@ -248,17 +252,20 @@ public:
 
 ```
 Yield(실효값)            = yieldNumerator / YIELD_DENOMINATOR                 [PRD FR-26][ADR-R4][결정-리서치]
-ShortageQuantity         = max(0, OrderQuantity - StockQuantity)               [ADR-Q1]
+ShortageQuantity         = max(0, OrderQuantity - max(0, StockQuantity))       [ADR-Q1][ADR-Q23]
 ActualProductionQuantity = ceil(ShortageQuantity / Yield)                      [PRD FR-17]
 TotalProductionTime      = AvgProductionTime × ActualProductionQuantity        [PRD FR-18][ADR-Q16]
 재고 반영량(생산완료)     = floor(ActualProductionQuantity × Yield)            [PRD FR-19][ADR-Q13]
 ```
 
-StockQuantity 변경: T1 `-= OrderQuantity` [PRD FR-09][ADR-Q9] · T2 `-= OrderQuantity` [PRD FR-10][ADR-Q9]
+StockQuantity 변경: T1 `-= OrderQuantity` [PRD FR-09][ADR-Q9] · T2 `-= OrderQuantity`(결과가 음수가 될 수 있다 — 미충족 약정 수량, 정상) [PRD FR-10][ADR-Q9][ADR-Q21]
 · T4 `+= floor(ActualProductionQuantity × Yield)` [PRD FR-19][ADR-Q13] · T6 `+= OrderQuantity` [PRD FR-12][ADR-Q7]
+· T5(출고) 변경 없음 — T1/T2에서 이미 차감 완료 [ADR-Q24]
 
-재고 상태(판단 대상 주문 OrderQuantity 기준): `Depleted: StockQuantity=0` · `Insufficient: 0<StockQuantity<OrderQuantity`
-· `Sufficient: StockQuantity>=OrderQuantity` [PRD FR-22][ADR-Q5]
+재고 상태(판단 대상 주문 OrderQuantity 기준, 재고량확인 화면의 표시 기준 — 출고 게이트가 아님): `Depleted: StockQuantity<=0` · `Insufficient: 0<StockQuantity<OrderQuantity`
+· `Sufficient: StockQuantity>=OrderQuantity` [PRD FR-22][ADR-Q5][ADR-Q22]
+
+출고(T5, CONFIRMED→RELEASE) 게이트: `StockQuantity >= 0` (OrderQuantity 대비가 아니다 — 위 표시 기준과 별개). 이미 T1/T2에서 차감된 값이 T4 생산완료 반영으로 0 이상까지 채워졌는지의 재검증이며, 출고 시점에 재고를 추가로 차감하지 않는다. [PRD §3.5][ADR-Q9][ADR-Q24]
 
 곱셈 기호 표기: `×` 사용. [ADR-Q16]
 
@@ -280,3 +287,4 @@ StockQuantity 변경: T1 `-= OrderQuantity` [PRD FR-09][ADR-Q9] · T2 `-= OrderQ
 | v1 | 최초 버전. PRD.md/DECISIONS.md(Q1~Q16, R1~R10) 전체를 근거로 엔티티(§1)·열거형(§2)·영속 저장 포맷(§3)·상태 전이표(§4)·Repository 인터페이스(§5, Delete 없음)·계산 규칙(§6) 작성. (작성일 미상 — 이 CHANGELOG 도입 이전 소급 기록) | Q1~Q16, R1~R10 전체 | ConsoleMVC, DataPersistence, DataMonitor, DummyDataGenerator (전체 4개) |
 | v2 | SPEC §8 "미션1" PoC 산출물 요구사항("데이터영속성처리 — CRUD 포함")과의 감사 결과 발견된 공백을 메움: `ISampleRepository`에 `Delete` 메서드 추가, 시료 삭제 시 참조무결성 가드(Order가 참조 중이면 삭제 거부) 명시. `IOrderRepository`는 Delete 미지원임을 의도적 설계로 명문화. 문서 최상단에 버전/최종수정일 헤더, "이 저장소에서만 개정" 원칙 추가. 본 CHANGELOG 섹션 신설(v1 소급 기록 포함). | ADR-C1, ADR-C2, ADR-C3 | ConsoleMVC, DataPersistence, DataMonitor, DummyDataGenerator (전체 4개 — Repository 인터페이스 시그니처 변경) |
 | v3 | AUDIT-CONTRACT-v2.md(B-02 재감사) 42행 전체를 (a)표현/(b)불가능화/(c)범위밖선언 중 하나로 닫음. 실패를 [R]/[D]/[F] 3범주로 재정의하고 오류 어휘 6개(WriteOutcome 3값 + 예외 3종) 확정. `Exists` 제거(FindById로 대체). `NextOrderId` 제거(채번은 Model 책임, ADR-Q15 유지). `FindByStatus` 인자를 문자열→`OrderStatus` 열거형으로 교체. `IOrderRepository::FindBySampleId` 신설. Sample/Order의 Add/Update, Sample의 Delete가 `void`/`bool`→`WriteOutcome`으로 변경. 참조무결성 수임자를 Model 단독으로 확정(ADR-C2의 "Model/Controller" 병기 및 FindBySampleId 미신설 판단을 Superseded 처리). Repository 검증 범위·불변식·비범위 절 신설. 문서 최상단에 동결 선언 추가. | ADR-E1~E11 | ConsoleMVC, DataPersistence, DataMonitor, DummyDataGenerator (전체 4개 — Repository 인터페이스 시그니처 전면 변경) |
+| v4 | 저장소 계층 인터페이스(§5)는 한 글자도 바꾸지 않음 — v3 동결 유효. T2(RESERVED→PRODUCING) 재고 차감이 항상 음수를 만든다는 상류 도메인 결정(ADR-Q21)을 반영해 StockQuantity 런타임 음수 허용으로 §1.2 불변식 정정, ShortageQuantity에 `max(0, StockQuantity)` 클램프 추가(ADR-Q23), 재고 상태 Depleted 경계를 `<=0`으로 확장(ADR-Q22), 출고(T5) 게이트를 `StockQuantity>=0`으로 명문화(ADR-Q24). 이 개정은 v3 계약 설계의 오류를 바로잡는 것이 아니라, DECISIONS.md에서 새로 확정된 도메인 결정(ADR-Q21~Q24)이 상류에서 내려온 것을 계산 규칙·불변식 절에 반영한 것이다. | ADR-Q21~Q24 | ConsoleMVC, DataPersistence (계산 규칙만 영향 — Repository 인터페이스 시그니처는 무영향) |
