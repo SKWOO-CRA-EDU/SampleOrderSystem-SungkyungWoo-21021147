@@ -734,3 +734,61 @@ CONTRACT.md는 SampleOrderSystem에서만 개정되며(CONTRACT.md 자체 명문
 **결정 시점과 출처**: 2026-07-15 사용자 지시.
 
 **기존 ADR과의 충돌 확인**: 없음.
+
+---
+
+# ADR-H 계열 — Harness 관측·검증 설계 결정 (Harness Design)
+
+> 본 섹션은 위 Q1~Q16/R1~R10/C1~C3/E1~E11/I1~I4와 근거 계통이 다르다. Q1~Q16은 SPEC 자체의 모호점 해석에 대한 결정, R1~R10은 RISKS.md 리스크 분석에서 도출된 방어적 보강 결정, C1~C3/E1~E11은 CONTRACT.md(Repository 계약) 감사에서 발견된 공백을 닫는 결정, I1~I4는 4개 PoC 저장소와 본 프로젝트(SampleOrderSystem) 사이의 통합 범위·방식에 대한 결정인 반면, 아래 H1~H4는 `docs/HARNESS-SURVEY.md`(동결된 CONTRACT v3 위에서 Harness가 무엇을 검증해야 하고 무엇을 검증할 수 있는지 조사한 결과)에서 도출된 **검증(테스트) 설계 결정**이다.
+> **H 계열은 CONTRACT.md를 개정하지 않는다.** CONTRACT.md는 동결된 Repository 계약이며, H 계열이 다루는 것은 계약 밖의 계층(Model, 합성 루트, 테스트 코드 자체)의 설계 결정이다.
+
+## H1. 관측 축을 둘로 한다
+
+**결정**: Harness는 (i) Repository 스냅샷, (ii) Model 반환값 두 축으로 관측한다.
+
+**근거**:
+- `docs/HARNESS-SURVEY.md` 축3에 따르면, 축1의 33개 명제 중 11건(#1~4 수식값, #10~12 재고상태 판정, #16 생산큐 불변식, #20~22 미지원 전이 거부)이 Repository 레벨에서 관측불가이며, 전부 Model 소관이다. Repository 스냅샷 단독으로는 33개 명제 중 22개만 덮는다.
+- 나머지 11건을 검증하려면 Model이 반환하는 값(계산 결과, 거부 사유 등)을 직접 관측해야 한다.
+
+**"화면 문자열 비교 금지"와의 관계**: 이 결정은 그 금지와 충돌하지 않는다. 금지된 것은 콘솔에 실제로 렌더링되는 문자열(View의 출력 결과) 비교이며, Model 반환값은 화면 문자열이 아니라 계층 간에 주고받는 데이터 값이다. Model 반환값을 관측 축으로 쓰는 것은 "화면 문자열 비교"에 해당하지 않는다.
+
+**Model API 부재의 명문화**: 이 저장소에는 아직 Model 계층 코드가 없다(CLAUDE.md 서두 — MVC 디렉터리 구조 미구현, `main.cpp` 스켈레톤 상태). "기능보다 Harness 먼저" 원칙에 따라, Model API는 아직 존재하지 않는다. Harness가 무엇을 호출해 어떤 반환값을 기대하는지가 곧 Model의 API 명세가 된다(outside-in) — Harness가 Model보다 먼저 쓰여 Model의 명세 역할을 한다. Model API는 CONTRACT.md에 넣지 않는다: CONTRACT.md는 저장소(Repository) 계약 전용 문서이며(CONTRACT.md 서두 "데이터 모델 · 영속 포맷 계약서"), Model API를 그 안에 넣는 것은 계약의 범위를 벗어나는 것이다.
+
+**이 결정이 무효화하는 것**: "저장 데이터 스냅샷 비교"(CLAUDE.md가 언급하는 Phase 6 문구)를 Harness의 유일한 관측 수단으로 읽는 해석을 무효화한다.
+
+## H2. 스냅샷 정의: 키 정렬 정규화 후 전 필드 비교
+
+**결정**: `docs/HARNESS-SURVEY.md` 축2가 제시한 4개 후보 중 **후보 C**(FindAll() 결과를 sampleId/orderId로 정렬한 뒤 필드 값 전체를 비교)를 채택한다.
+
+**기각 근거**:
+- **후보 A(저장 파일 원본 바이트열 비교)**: InMemory 저장소에는 파일이 없으므로 이 정의 자체가 성립하지 않는다(HARNESS-SURVEY 축2, "InMemory/파일 저장소 양쪽에 같은 Harness가 도는가: 아니오"). 또한 CONTRACT.md §3이 "파일 형식·경로·원자적 교체 구현은 저장소 자유"로 선언한 영역을 비교 대상으로 삼게 되어 ADR-E3(저장 방식과 무관한 어휘 원칙)의 정신에 위배된다.
+- **후보 B(FindAll 원순서 그대로 비교)**: FindAll()이 반환하는 vector의 순회 순서 비결정성이 스냅샷에 그대로 샌다(HARNESS-SURVEY 축2, "CONTRACT §7에 정렬 보장이 없음").
+- **후보 D(불변식·파생 스칼라값만 비교)**: 개수·합계만 비교하므로 개별 필드(예: 특정 orderId의 status가 정확히 기대값인지) 정합성을 검증하지 못해 범위가 좁다.
+
+**CreatedAt 트레이드오프 해소**: HARNESS-SURVEY 축2가 후보 C에 대해 지적한 유일한 약점은 "CreatedAt(타임스탬프) 필드를 비교 대상에 포함할지 여부는 이 후보 자체가 정하지 않는다 — 포함하면 여전히 비결정성 원천이 남는다"는 것이었다. 아래 ADR-H3이 Clock을 고정해 CreatedAt을 결정적 값으로 만들므로, 이 약점은 H3으로 해소된다. 따라서 CreatedAt 필드를 스냅샷 비교에서 제외하지 않는다.
+
+**포기하는 것**: 이 스냅샷은 Repository가 반환하는 구조체 값(SampleRecord/OrderRecord)만 비교하므로, 실제 저장 파일의 직렬화 포맷 자체(바이트 단위 표현)의 회귀는 이 스냅샷으로 잡히지 않는다.
+
+## H3. Clock: Model이 인터페이스를 쓰고 합성 루트가 구현체를 주입
+
+**결정**: `docs/HARNESS-SURVEY.md` 축4가 제시한 후보 1(Model 내부에 Clock 추상화 주입)과 후보 2(합성 루트에서 Clock 구현체 주입)를 **조합**한다. 두 후보는 배타적이지 않다 — 후보 1은 "Clock 인터페이스를 어디서 쓰나"(Model)에 답하고, 후보 2는 "구현체(Real/Fake)를 어디서 선택해 주입하나"(합성 루트)에 답하며, 서로 다른 계층의 질문이다.
+
+**기각**:
+- **후보 3(Controller가 시각을 얻어 Model에 인자로 전달)**: 시간 관심사가 Controller로 번져 CLAUDE.md §2("Controller는 Model 조작과 View 호출을 조율하는 역할만 한다")의 정신과 어긋난다.
+- **후보 4(R6 시뮬레이션 시계/틱 진행)**: DECISIONS.md ADR-R6가 이미 생산완료 트리거를 수동 명령(채택안 A, 경과시간 계산 없음)으로 확정했으므로, 이 지점은 현재 결정상 불필요하다.
+
+**명문화**: 실제 `sleep`은 금지한다. Clock은 CONTRACT.md 밖의 개념이며, 동결된 11개 Repository 인터페이스 중 어느 것도 건드리지 않는다.
+
+**결과**: OrderRecord.createdAt이 Fake Clock 하에서 결정적 값이 되어, ADR-H2가 채택한 스냅샷 비교가 CreatedAt 필드를 포함한 채로 완전히 결정적으로 재현 가능해진다.
+
+## H4. 실패 주입을 2계층으로 나눈다
+
+**결정**:
+- **Tier 1 (계약 준수 검증)**: Repository 인터페이스의 테스트 더블이 예외 3종(StorageUnavailable/StorageCorrupted/SchemaVersionMismatch)과 WriteOutcome을 임의로 반환/발생시킨다. 저장 방식 중립이며, 상위 계층(Model/Controller)이 6개 오류 어휘(ADR-E2)를 올바르게 다루는지만 검증한다.
+- **Tier 2 (구현체 검증)**: 실제 파일 저장소 구현체가 자신의 포맷을 아는 상태에서 실제 실패(파일 손상, 접근 불가 등)를 주입한다. `docs/HARNESS-SURVEY.md` 축1 #29(구현 라이브러리 예외가 6개 어휘 밖으로 새면 결함)는 Tier 2가 검증한다.
+
+**근거**: `docs/HARNESS-SURVEY.md` 축5가 보고한 "수단없음" 3건(StorageUnavailable/StorageCorrupted/SchemaVersionMismatch)은 CONTRACT.md §3이 "파일 형식·경로·원자적 교체 구현은 저장소 자유"를 선언한 결과이며, 계약이 수단을 못 준 것이 아니라 원리적으로 줄 수 없는 것이 맞다 — 계약의 결함이 아니다.
+
+**명문화**: Tier 2는 구현 결합이 정당한 유일한 지점이다. Tier 1에 특정 저장 포맷 지식(파일 경로, 직렬화 키 이름 등)이 새어 들어가면 그것은 결함이다.
+
+**포기하는 것**: Tier 2는 저장소 구현체가 교체되면(예: 파일 → DB) 다시 작성해야 한다 — 구현 결합을 감수한 대가다.
