@@ -240,9 +240,9 @@
 | 36 | Order.NextOrderId / 신뢰불가 데이터(비순차/음수) | (b) 불가능화 | ADR-E4 | 동일. |
 | 37 | Order.NextOrderId / 저장 매체 접근 불가 | (b) 불가능화 | ADR-E4 | 메서드 제거. 채번에 쓰이는 `FindAll()`이 `StorageUnavailable`을 던져 표면화(임의값 반환 경로 소멸). |
 | 38 | Order.Add / 키중복·저장매체·신뢰불가·스키마버전 | (a) 표현 | ADR-E1, ADR-E2 | `WriteOutcome::DuplicateKey` + 3개 예외로 표현. |
-| 39 | Order.Add / 존재하지 않는 sampleId 참조(검증주체 불명) | (c) 범위 밖 선언 | ADR-E9 | Repository는 참조무결성을 검증하지 않음을 명문화(§5.4). 검증 주체는 Model(PRD FR-29)로 계약에 명시. |
+| 39 | Order.Add / 존재하지 않는 sampleId 참조(검증주체 불명) | (c) 범위 밖 선언 | ADR-E9 | Repository는 참조무결성을 검증하지 않음을 명문화(§5.4). 검증 주체는 Model(CONTRACT §5.4, ADR-E9)로 계약에 명시. |
 | 40 | Order.Update / 대상 부재 | (a) 표현 | ADR-E1, ADR-E2 | `WriteOutcome::NotFound`로 표현. |
-| 41 | Order.Update / §4에 없는 불법 상태 전이 시도 | (c) 범위 밖 선언 | ADR-E9 | Repository는 상태 전이 적법성을 검증하지 않음을 명문화(§5.4/§4). 검증 주체는 Model(PRD FR-27). |
+| 41 | Order.Update / §4에 없는 불법 상태 전이 시도 | (c) 범위 밖 선언 | ADR-E9 | Repository는 상태 전이 적법성을 검증하지 않음을 명문화(§5.4/§4). 검증 주체는 Model(CONTRACT §5.4, ADR-E9). |
 | 42 | Order.Update / 신뢰불가·스키마버전·저장매체 | (a) 표현 | ADR-E2 | 3개 예외로 표현. |
 
 ### 자체 검증
