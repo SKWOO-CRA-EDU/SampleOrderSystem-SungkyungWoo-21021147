@@ -2,6 +2,15 @@
 
 namespace app {
 
+SampleSummary AppController::GetSampleSummary() const {
+    auto samples = sampleService_.ListSamples();
+    int64_t totalStockQuantity = 0;
+    for (const auto& sample : samples) {
+        totalStockQuantity += sample.stockQuantity;
+    }
+    return SampleSummary{samples.size(), totalStockQuantity};
+}
+
 void AppController::RegisterSample(const std::string& sampleId, const std::string& name, double avgProductionTime,
                                     int yieldNumerator) {
     auto result = sampleService_.RegisterSample(sampleId, name, avgProductionTime, yieldNumerator);

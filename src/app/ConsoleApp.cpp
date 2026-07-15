@@ -11,11 +11,18 @@ std::string ConsoleApp::ReadField(const std::string& label) {
 
 void ConsoleApp::Run() {
     while (true) {
+        auto summary = controller_.GetSampleSummary();
         std::cout << "\n=== S-Semi 시료 생산 주문관리 시스템 ===\n"
-                     "1.시료등록  2.시료조회  3.시료검색  4.시료삭제\n"
-                     "5.시료예약  6.접수된주문목록  7.주문승인  8.주문거절\n"
-                     "9.CONFIRMED취소  10.출고처리  11.생산완료처리  12.생산현황/대기주문\n"
-                     "13.주문량확인  14.재고량확인  0.종료\n"
+                     "등록 시료 종수: " << summary.sampleCount << "종  /  총 재고수량: " << summary.totalStockQuantity << "개\n"
+                     "----------------------------------------\n"
+                     "1.시료등록        2.시료조회\n"
+                     "3.시료검색        4.시료삭제\n"
+                     "5.시료예약        6.접수된주문목록\n"
+                     "7.주문승인        8.주문거절\n"
+                     "9.CONFIRMED취소   10.출고처리\n"
+                     "11.생산완료처리   12.생산현황/대기주문\n"
+                     "13.주문량확인     14.재고량확인\n"
+                     "0.종료\n"
                      "명령 선택> ";
         std::string choice = input_.ReadLine();
         if (choice.empty() || choice == "0") {

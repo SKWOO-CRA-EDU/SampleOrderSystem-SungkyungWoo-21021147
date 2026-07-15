@@ -10,11 +10,20 @@
 
 namespace app {
 
+// CC-10 — 메인 화면 (b) 요약 표시용. 기존 SampleService::ListSamples() 조회 결과를 집계만 한다(신규 Model 계산식 아님).
+struct SampleSummary {
+    size_t sampleCount;
+    int64_t totalStockQuantity;
+};
+
 class AppController {
 public:
     AppController(model::SampleService& sampleService, model::OrderService& orderService,
                    ports::IOutputPort& output)
         : sampleService_(sampleService), orderService_(orderService), output_(output) {}
+
+    // CC-10 — 등록 시료 종수 / 총 재고수량. sampleService_.ListSamples()(FR-04, 기존 조회)로만 얻는다.
+    SampleSummary GetSampleSummary() const;
 
     void RegisterSample(const std::string& sampleId, const std::string& name, double avgProductionTime,
                          int yieldNumerator);
