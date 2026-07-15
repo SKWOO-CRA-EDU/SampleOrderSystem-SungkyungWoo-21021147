@@ -1,6 +1,8 @@
 // 합성 루트. 저장소/포트 구현체를 조립해 Model/Controller/View에 주입한다 (CLAUDE.md §2).
 #include <iostream>
 
+#include <Windows.h>
+
 #include "src/app/AppController.h"
 #include "src/app/ConsoleApp.h"
 #include "src/infra/console/ConsoleInputPort.h"
@@ -13,6 +15,10 @@
 #include "src/model/SampleService.h"
 
 int main() {
+    // 콘솔 코드페이지를 UTF-8로 설정 (ADR-Q25) — /utf-8 컴파일 옵션과 콘솔 기본 코드페이지 불일치 해소.
+    SetConsoleOutputCP(CP_UTF8);
+    SetConsoleCP(CP_UTF8);
+
     infra::persistence::JsonDocumentStore store("data.json");
     infra::persistence::FileSampleRepository sampleRepo(store);
     infra::persistence::FileOrderRepository orderRepo(store);
