@@ -152,6 +152,11 @@
     <ClCompile Include="src\model\Calculations.cpp" />
     <ClCompile Include="src\model\SampleService.cpp" />
     <ClCompile Include="src\model\OrderService.cpp" />
+    <ClCompile Include="src\infra\console\SystemClock.cpp" />
+    <ClCompile Include="src\infra\console\ConsoleInputPort.cpp" />
+    <ClCompile Include="src\infra\console\ConsoleOutputPort.cpp" />
+    <ClCompile Include="src\app\AppController.cpp" />
+    <ClCompile Include="src\app\ConsoleApp.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\domain\Records.h" />
@@ -171,6 +176,11 @@
     <ClInclude Include="src\model\Calculations.h" />
     <ClInclude Include="src\model\SampleService.h" />
     <ClInclude Include="src\model\OrderService.h" />
+    <ClInclude Include="src\infra\console\SystemClock.h" />
+    <ClInclude Include="src\infra\console\ConsoleInputPort.h" />
+    <ClInclude Include="src\infra\console\ConsoleOutputPort.h" />
+    <ClInclude Include="src\app\AppController.h" />
+    <ClInclude Include="src\app\ConsoleApp.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
