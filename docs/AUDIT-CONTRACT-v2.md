@@ -190,3 +190,64 @@
 - 또한 이 "호출자"가 참조무결성을 확인할 때 사용할 메서드 자체가 §5에 없다 — `IOrderRepository`에는 `FindBySampleId` 류가 없고, `FindByStatus`/`FindById`/`FindAll`뿐이다. 즉 호출자는 명시되지 않았을 뿐 아니라, 명시되었다 하더라도 그 호출자가 무엇을 호출해서 참조무결성을 확인해야 하는지도 계약에 없다 (아마 `FindAll()` 후 애플리케이션 레벨 필터링을 암묵적으로 가정).
 
 **결론: 명시되어 있지 않다.** CONTRACT.md의 주석 한 줄이 "Model/Controller"라고 모호하게 언급할 뿐, 단일 책임 주체도 검증에 쓸 메서드도 특정되어 있지 않다.
+
+---
+
+## 6. 닫힘 방식 (CONTRACT v3 대조, 전체 42행)
+
+> 감사 기준 개정: "모든 실패 상황이 시그니처로 전달 가능해야 한다"는 기준을 폐기하고, 닫힘 방식을
+> **(a) 표현한다**(오류 어휘로 호출자에게 전달) / **(b) 불가능하게 만든다**(타입·메서드 제거로 상태 자체를 표현 불가능하게) /
+> **(c) 범위 밖으로 선언한다**(계약에 명문화 + 근거 기록) 셋 중 하나로 재정의한다. (c)도 닫힘이다.
+> 아래 표는 `docs/DECISIONS.md`의 ADR-E1~E11 및 `docs/CONTRACT.md` v3을 근거로 42행 전체를 닫는다.
+
+| # | 메서드 / 실패 상황 | 닫힘 방식 | 근거 ADR-ID | 설명 |
+|---|---|---|---|---|
+| 1 | Sample.FindById / 대상 부재 | (a) 표현 | ADR-E1 | `optional` empty가 [R] 범주의 설계된 정상 경로. |
+| 2 | Sample.FindById / 키 중복(저장소에 중복 레코드) | (c) 범위 밖 선언 | ADR-E11, ADR-E9 | 정상 경로는 `Add`의 `DuplicateKey`로 이미 불가능(보조: (b)); 외부 파일 조작으로 생긴 중복의 완전 탐지 보장은 비범위로 명문화, 탐지 시 `StorageCorrupted`로 분류. |
+| 3 | Sample.FindById / 데이터 신뢰 불가(파싱 실패) | (a) 표현 | ADR-E2 | `StorageCorrupted` 예외로 표현. |
+| 4 | Sample.FindById / 스키마 버전 다름 | (a) 표현 | ADR-E2 | `SchemaVersionMismatch` 예외로 표현. |
+| 5 | Sample.FindById / 저장 매체 접근 불가 | (a) 표현 | ADR-E2 | `StorageUnavailable` 예외로 표현. |
+| 6 | Sample.FindAll / 대상 부재(0건) | (a) 표현 | ADR-E1 | 빈 `vector`가 [R] 범주의 설계된 정상 경로. |
+| 7 | Sample.FindAll / 키 중복 | (c) 범위 밖 선언 | ADR-E11, ADR-E9 | #2와 동일 패턴. |
+| 8 | Sample.FindAll / 신뢰 불가 데이터(일부 손상) | (a) 표현 | ADR-E2, ADR-E11 | `StorageCorrupted` 예외 + "부분 손상 시 전체 손상 간주"(비범위 §9)로 조용한 스킵 자체를 금지. |
+| 9 | Sample.FindAll / 스키마 버전 다름 | (a) 표현 | ADR-E2 | `SchemaVersionMismatch` 예외로 표현. |
+| 10 | Sample.FindAll / 저장 매체 접근 불가 | (a) 표현 | ADR-E2 | `StorageUnavailable` 예외로 표현. |
+| 11 | Sample.Exists / 대상 부재 | (b) 불가능화 | ADR-E3 | `Exists` 메서드 자체를 계약에서 제거. `FindById().has_value()`로 대체. |
+| 12 | Sample.Exists / 신뢰 불가 데이터 | (b) 불가능화 | ADR-E3 | 메서드 제거로 `bool` 표현력 문제 자체가 소멸. |
+| 13 | Sample.Exists / 스키마 버전 다름 | (b) 불가능화 | ADR-E3 | 동일. |
+| 14 | Sample.Exists / 저장 매체 접근 불가 | (b) 불가능화 | ADR-E3 | 동일. |
+| 15 | Sample.Add / 키 중복 | (a) 표현 | ADR-E1, ADR-E2 | `WriteOutcome::DuplicateKey`로 표현. |
+| 16 | Sample.Add / 저장 매체 접근 불가(쓰기 실패) | (a) 표현 | ADR-E2 | `StorageUnavailable` 예외로 표현. |
+| 17 | Sample.Add / 신뢰 불가 데이터(직렬화 실패) | (a) 표현 | ADR-E2 | `StorageCorrupted` 예외로 표현. |
+| 18 | Sample.Add / 스키마 버전 다름 | (a) 표현 | ADR-E2 | `SchemaVersionMismatch` 예외로 표현. |
+| 19 | Sample.Update / 대상 부재 | (a) 표현 | ADR-E1, ADR-E2 | `WriteOutcome::NotFound`로 표현. |
+| 20 | Sample.Update / 저장매체·신뢰불가·스키마버전 | (a) 표현 | ADR-E2 | 3개 예외로 표현. |
+| 21 | Sample.Delete / 대상 부재 | (a) 표현 | ADR-E1, ADR-E2 | `bool`을 폐기하고 `WriteOutcome::NotFound`로 표현. |
+| 22 | Sample.Delete / 참조무결성 위반 | (c) 범위 밖 선언 | ADR-E8, ADR-E9 | Repository 계약 관점에서는 참조무결성을 검증하지 않음을 명문화(비범위). 실제 거부는 Model이 `Delete` 호출 전 `FindBySampleId`로 확인 후 View를 통해 표현(수임자+메서드 §5.3에 명시). |
+| 23 | Sample.Delete / 키 중복(동일 sampleId 2개 이상) | (c) 범위 밖 선언 | ADR-E11, ADR-E9 | #2와 동일 패턴. |
+| 24 | Sample.Delete / 저장 매체 접근 불가 | (a) 표현 | ADR-E2 | `StorageUnavailable` 예외로 표현. |
+| 25 | Sample.Delete / 신뢰불가·스키마버전 | (a) 표현 | ADR-E2 | 예외로 표현. |
+| 26 | Order.FindById / 대상 부재 | (a) 표현 | ADR-E1 | `optional` empty. |
+| 27 | Order.FindById / 키 중복(orderId 충돌) | (b) 불가능화 | ADR-E4 | `NextOrderId` 제거, 채번은 Model이 `FindAll()` 기반 max+1 수행, `Add`의 `DuplicateKey`가 최종 방어선 — 정상 경로에서 구조적으로 불가능. |
+| 28 | Order.FindById / 신뢰불가·스키마버전·저장매체 | (a) 표현 | ADR-E2 | 3개 예외로 표현. |
+| 29 | Order.FindAll / 대상부재(0건)·키중복·신뢰불가·스키마버전·저장매체 | (a) 표현 | ADR-E1, ADR-E2 | 0건은 빈 `vector`(a), 신뢰불가/스키마버전/저장매체는 예외(a)로 표현. 키중복 하위 사례는 #2/#7과 동일하게 (c)로 보조 처리(ADR-E11). |
+| 30 | Order.FindByStatus / 대상부재(0건) | (a) 표현 | ADR-E1 | 빈 `vector`. |
+| 31 | Order.FindByStatus / 열거값 외 문자열 입력(오탈자) | (b) 불가능화 | ADR-E6 | 인자를 `std::string`→`OrderStatus` 열거형으로 교체 — 오탈자 자체가 컴파일 타임에 불가능. |
+| 32 | Order.FindByStatus / 저장된 status가 열거값 외 문자열(손상/구버전) | (a) 표현 | ADR-E10, ADR-E2 | 불변식("저장된 status는 §2 열거값 중 하나") 위반 시 `StorageCorrupted`로 표현 — "유령 주문" 상태가 감지 가능한 손상으로 격상. |
+| 33 | Order.FindByStatus / 스키마버전·저장매체 | (a) 표현 | ADR-E2 | 예외로 표현. |
+| 34 | Order.NextOrderId / 저장소 비어있을 때 초깃값 | (b) 불가능화 | ADR-E4 | `NextOrderId` 메서드 자체 제거 — 초깃값 문제가 Repository 계약에서 소멸(Model이 빈 경우 1로 시작). |
+| 35 | Order.NextOrderId / 키중복 위험(카운터·실제 불일치) | (b) 불가능화 | ADR-E4 | 메서드 제거로 "카운터"라는 개념 자체가 Repository에서 소멸. `Add`의 `DuplicateKey`가 최종 방어선. |
+| 36 | Order.NextOrderId / 신뢰불가 데이터(비순차/음수) | (b) 불가능화 | ADR-E4 | 동일. |
+| 37 | Order.NextOrderId / 저장 매체 접근 불가 | (b) 불가능화 | ADR-E4 | 메서드 제거. 채번에 쓰이는 `FindAll()`이 `StorageUnavailable`을 던져 표면화(임의값 반환 경로 소멸). |
+| 38 | Order.Add / 키중복·저장매체·신뢰불가·스키마버전 | (a) 표현 | ADR-E1, ADR-E2 | `WriteOutcome::DuplicateKey` + 3개 예외로 표현. |
+| 39 | Order.Add / 존재하지 않는 sampleId 참조(검증주체 불명) | (c) 범위 밖 선언 | ADR-E9 | Repository는 참조무결성을 검증하지 않음을 명문화(§5.4). 검증 주체는 Model(PRD FR-29)로 계약에 명시. |
+| 40 | Order.Update / 대상 부재 | (a) 표현 | ADR-E1, ADR-E2 | `WriteOutcome::NotFound`로 표현. |
+| 41 | Order.Update / §4에 없는 불법 상태 전이 시도 | (c) 범위 밖 선언 | ADR-E9 | Repository는 상태 전이 적법성을 검증하지 않음을 명문화(§5.4/§4). 검증 주체는 Model(PRD FR-27). |
+| 42 | Order.Update / 신뢰불가·스키마버전·저장매체 | (a) 표현 | ADR-E2 | 3개 예외로 표현. |
+
+### 자체 검증
+
+- (a) 표현으로 닫힌 행: 1,3,4,5,6,8,9,10,15,16,17,18,19,20,21,24,25,26,28,29,30,32,33,38,40,42 = **26행**
+- (b) 불가능화로 닫힌 행: 11,12,13,14,27,31,34,35,36,37 = **10행**
+- (c) 범위 밖 선언으로 닫힌 행: 2,7,22,23,39,41 = **6행**
+- **합계: 26 + 10 + 6 = 42행 — 42행 전체와 일치. 빈 칸 없음.**
