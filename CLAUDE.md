@@ -10,7 +10,7 @@
 
 - 언어: C++20 (MSVC, `LanguageStandard=stdcpp20`)
 - 프로젝트 형식: Visual Studio `.vcxproj` (`SampleOrderSystem.vcxproj`), Win32/x64, Debug/Release
-- 진입점: `main.cpp` (현재 스켈레톤 상태 — MVC 디렉터리 구조는 아직 구현되지 않음)
+- 진입점: `main.cpp` (합성 루트. `src/domain`·`src/ports`·`src/infra`·`src/model`·`src/app` MVC 골격 구현됨)
 
 빌드(명령줄, Developer Command Prompt 또는 `vswhere`로 찾은 `msbuild.exe` 필요):
 ```
@@ -19,8 +19,13 @@ msbuild SampleOrderSystem.vcxproj /p:Configuration=Debug /p:Platform=x64
 릴리스 빌드는 `Configuration=Release`로 교체.
 
 테스트/harness:
-- 현재 저장소에는 테스트 프로젝트/harness가 존재하지 않는다. MVC 골격을 만들 때 테스트 프레임워크(예: Catch2, doctest) 도입 여부와 테스트 프로젝트 구조를 **먼저 사용자에게 확인**한 뒤 구성한다 — 임의로 프레임워크를 도입하지 않는다.
-- 테스트/harness 구성이 결정되면 이 섹션에 실행 명령을 반드시 추가한다.
+- 프레임워크 미도입(ADR-I4, 2026-07-15 사용자 확인) — assert-count 방식 자체 harness. `tests/SampleOrderSystemTests.vcxproj`(별도 프로젝트, `SampleOrderSystem.vcxproj`와 분리).
+- 실행:
+```
+msbuild tests\SampleOrderSystemTests.vcxproj /p:Configuration=Debug /p:Platform=x64
+tests\x64\Debug\SampleOrderSystemTests.exe
+```
+- 구성/커버리지 상세는 `tests/README.md` 참고(덮은/안 덮은 명제 번호 명시).
 - `/verify` 스킬로 변경사항이 실제로 동작하는지 항상 확인한다(콘솔 앱이므로 최소한 실행하여 핵심 플로우를 눈으로 확인).
 
 ---
