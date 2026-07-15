@@ -660,7 +660,7 @@
 
 **결정**: PoC 4종(ConsoleMVC, DataPersistence, DataMonitor, DummyDataGenerator)은 폐기 대상이 아니다. Walking Skeleton으로서 본 프로젝트(SampleOrderSystem)로 이식된다.
 
-**맥락 (repo 토폴로지)**: 이 문서(DECISIONS.md)와 CONTRACT.md 어디에도 지금까지 PoC repo 이름이 등장하지 않았다(§2 확인 결과, `docs/CONTRACT.md`에만 "4개 PoC 저장소" 표현으로 존재 — grep 18건 중 PoC 개별 repo명 자체를 명시한 것은 CONTRACT.md 8~15행뿐). 이 절이 없으면 아래 I2~I4가 참조할 대상이 없어 읽히지 않는다. 산출물은 Public repo 5개로 구성된다:
+**맥락 (repo 토폴로지)**: `docs/CONTRACT.md`는 이미 4개 PoC 저장소 배포를 전제하고 있다. CONTRACT.md §CHANGELOG(278~282행)의 "영향받는 PoC 저장소" 열은 v1·v2·v3 모두 "ConsoleMVC, DataPersistence, DataMonitor, DummyDataGenerator (전체 4개)"로 일관 기록되어 있다. 다만 이는 CONTRACT.md가 계약 배포 대상 저장소를 전제한다는 것일 뿐, PoC의 실제 코드가 본 프로젝트(SampleOrderSystem)로 이식된다는 것과는 다른 명제다 — 이 절은 후자(이식 대상 지위)를 명문화한다. 이 절이 없으면 아래 I2~I4가 참조할 대상이 없어 읽히지 않는다. 산출물은 Public repo 5개로 구성된다:
 - ConsoleMVC / DataPersistence / DataMonitor / DummyDataGenerator (PoC 4종, 각 개별 repo)
 - SampleOrderSystem (본 프로젝트, 이 저장소)
 
@@ -681,7 +681,7 @@ CONTRACT.md는 SampleOrderSystem에서만 개정되며(CONTRACT.md 자체 명문
 **결정**: PoC의 v1 코드를 복사한 뒤 고치는 방식을 쓰지 않는다. 이식은 CONTRACT.md v3 기준으로 코드를 처음부터 다시 작성하는 방식으로 한다.
 
 **근거**:
-- §2 (3) 확인 결과, 본 repo(SampleOrderSystem)에는 아직 도메인 코드가 없다 — `git log` 총 14개 커밋은 전부 docs 커밋과 최초 스캐폴드(`d30ef7a Initial console app scaffold`)뿐이며, 저장소 루트에 `src` 디렉터리는 없고 `main.cpp` 하나만 존재한다(스켈레톤). 즉 통합이 이 저장소에 대한 코드의 최초 유입이다.
+- §2 (3) 확인 결과, 본 repo(SampleOrderSystem)의 커밋 14개 중 코드 커밋은 `d30ef7a Initial console app scaffold` 1건뿐이며, 저장소 루트에 `src` 디렉터리는 없고 `main.cpp` 스켈레톤만 존재한다(도메인 로직 없음). 기존 스캐폴드 `main.cpp`를 통합 시 어떻게 처리할지(유지/대체 등)는 이 ADR의 결정 사항이 아니며 별도 결정이 필요하다.
 - 이 프로젝트는 "문서가 코드보다 먼저 커밋된다"는 것을 전제로 운영되어 왔다(CLAUDE.md 서두, 커밋 이력 전체가 그 증거). PoC의 v1 코드는 CONTRACT.md v1/v2 시점 계약을 대상으로 작성되었고 이후 v3까지 개정되었으므로, v1 코드를 그대로 복사해 들여오면 계약 위반 상태의 코드가 본 저장소 이력에 한 번이라도 커밋되는 순간, "문서가 코드보다 먼저"라는 전제가 이 저장소의 커밋 이력에서 깨진다.
 - v1→v3 사이의 drift를 발견하고 고친 이력은 이미 각 PoC repo(ConsoleMVC 등)에 남아 있다. 여기서 그 수정 과정을 반복할 필요가 없다 — 이 저장소는 v3가 확정된 이후의 결과물만 받으면 된다.
 
