@@ -149,6 +149,9 @@
     <ClCompile Include="src\infra\persistence\MiniJson.cpp" />
     <ClCompile Include="src\infra\persistence\OrderStatusCodec.cpp" />
     <ClCompile Include="src\infra\persistence\JsonDocumentStore.cpp" />
+    <ClCompile Include="src\model\Calculations.cpp" />
+    <ClCompile Include="src\model\SampleService.cpp" />
+    <ClCompile Include="src\model\OrderService.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\domain\Records.h" />
@@ -164,6 +167,10 @@
     <ClInclude Include="src\infra\persistence\JsonDocumentStore.h" />
     <ClInclude Include="src\infra\persistence\FileSampleRepository.h" />
     <ClInclude Include="src\infra\persistence\FileOrderRepository.h" />
+    <ClInclude Include="src\ports\IClock.h" />
+    <ClInclude Include="src\model\Calculations.h" />
+    <ClInclude Include="src\model\SampleService.h" />
+    <ClInclude Include="src\model\OrderService.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

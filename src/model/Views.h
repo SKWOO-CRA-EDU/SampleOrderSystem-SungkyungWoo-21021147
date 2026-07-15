@@ -38,6 +38,7 @@ enum class RejectionCode {
     OrderNotFound,
     IllegalTransition,
     EmptyProductionQueue,
+    ReleaseNotReady,  // Q24 게이트(재고>=0) 미충족
 };
 
 }  // namespace model
