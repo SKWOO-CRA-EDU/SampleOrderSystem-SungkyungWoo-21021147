@@ -19,17 +19,17 @@ std::string ConsoleApp::ReadField(const std::string& label) {
 
 void ConsoleApp::PrintMainMenu() {
     auto summary = controller_.GetSampleSummary();
-    std::cout << "\n=== S-Semi 시료 생산 주문관리 시스템 ===\n"
+    std::cout << "\n"
+                 "┌──────────────────────────────────┐\n"
+                 "│   S-Semi 시료 생산 주문관리 시스템   │\n"
+                 "└──────────────────────────────────┘\n"
                  "등록 시료 종수: "
               << summary.sampleCount << "종  /  총 재고수량: " << summary.totalStockQuantity
               << "개\n"
-                 "----------------------------------------\n"
-              << Num("1") << " 시료 관리\n"
-              << Num("2") << " 시료 주문\n"
-              << Num("3") << " 주문 승인/거절\n"
-              << Num("4") << " 모니터링\n"
-              << Num("5") << " 생산라인 조회\n"
-              << Num("6") << " 출고 처리\n"
+                 "────────────────────────────────────\n"
+              << Num("1") << " 시료 관리        " << Num("2") << " 시료 주문\n"
+              << Num("3") << " 주문 승인/거절    " << Num("4") << " 모니터링\n"
+              << Num("5") << " 생산라인 조회    " << Num("6") << " 출고 처리\n"
               << Num("0") << " 종료\n"
                  "명령 선택> ";
 }
