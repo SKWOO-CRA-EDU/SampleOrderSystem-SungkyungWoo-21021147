@@ -224,6 +224,26 @@ public:
 · Add/Update [PRD FR-01,06,09-12,19,20][ADR-E1] · Delete(Sample만) [PRD FR-33][ADR-C1][ADR-C2][ADR-E8]
 · Order Delete 미지원 [ADR-C3][PRD §6 비범위] · NextOrderId 미제공 [ADR-E4] · Exists 제거 [ADR-E3]
 
+### 7.1 메서드별 범주 표 (11개 메서드)
+
+> §7 코드의 블록 주석(범주별 묶음 표기)과 내용은 동일하다. 대조를 기계적으로 할 수 있도록 메서드별 한 행으로 병기한다.
+
+| 메서드 | 범주 | 반환 관용구 |
+|---|---|---|
+| `ISampleRepository::FindById` | [R] | `std::optional<SampleRecord>` |
+| `ISampleRepository::FindAll` | [R] | `std::vector<SampleRecord>` |
+| `ISampleRepository::Add` | [D] | `WriteOutcome` (Ok/DuplicateKey) |
+| `ISampleRepository::Update` | [D] | `WriteOutcome` (Ok/NotFound) |
+| `ISampleRepository::Delete` | [D] | `WriteOutcome` (Ok/NotFound) |
+| `IOrderRepository::FindById` | [R] | `std::optional<OrderRecord>` |
+| `IOrderRepository::FindAll` | [R] | `std::vector<OrderRecord>` |
+| `IOrderRepository::FindByStatus` | [R] | `std::vector<OrderRecord>` |
+| `IOrderRepository::FindBySampleId` | [R] | `std::vector<OrderRecord>` |
+| `IOrderRepository::Add` | [D] | `WriteOutcome` (Ok/DuplicateKey) |
+| `IOrderRepository::Update` | [D] | `WriteOutcome` (Ok/NotFound) |
+
+[F] 범주(예외)는 메서드별 행이 아니라 §5.2/§7 상단의 폐쇄 진술 1곳에 집중한다 — 11개 메서드 모두 `StorageUnavailable`/`StorageCorrupted`/`SchemaVersionMismatch`를 던질 수 있고, 이 3개 외에는 던지지 않는다. [ADR-E2]
+
 ## 8. 계산 규칙
 
 ```
